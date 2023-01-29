@@ -6,11 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,16 +25,37 @@ public class TransportParser {
         this.webClient = webClientBuilder.baseUrl(apiUrl).build();
     }
 
-    public Stop getStopById(int id) {
+    public List<StopPrediction> getStopPredictionsById(int stopId) {
+        List<StopPrediction> predictions = new ArrayList<>();
         String response = webClient.get()
-                .uri("/station/predictionSite/" + id)
+                .uri("/station/predictionSite/" + stopId)
                 .retrieve()
                 .bodyToMono(String.class).block();
         JsonNode json = getJson(response);
-        return null;
+        JsonNode dataNode = json.get("data").get("predictions");
+        if (dataNode.isArray()) {
+            for (JsonNode predictionNode : dataNode) {
+                int transportId = predictionNode.get("id").asInt();
+                int distanceToStop = predictionNode.get("prediction").get("meters").asInt();
+                int route = getRouteNumberById(transportId);
+                int stopsCount = predictionNode.get("prediction").get("stationCount").asInt();
+                StopPrediction prediction = new StopPrediction(stopId, transportId, route, distanceToStop, stopsCount);
+                predictions.add(prediction);
+            }
+        }
+        return predictions;
     }
 
-    private static JsonNode getJson(String jsonString) {
+    private int getRouteNumberById(int id) {
+        String response = webClient.get()
+                .uri("/route/getsummary/" + id)
+                .retrieve()
+                .bodyToMono(String.class).block();
+        JsonNode json = getJson(response);
+        return json.get("data").get("name").asInt();
+    }
+
+    private JsonNode getJson(String jsonString) {
         JsonNode json = null;
         try {
             json = mapper.readTree(jsonString);
