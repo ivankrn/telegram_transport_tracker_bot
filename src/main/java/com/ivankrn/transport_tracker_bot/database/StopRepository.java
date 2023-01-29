@@ -15,5 +15,5 @@ public interface StopRepository extends CrudRepository<Stop, Long>, PagingAndSor
     @Query("select distinct upper(left(name, 1)) letter from Stop order by letter")
     List<Character> getDistinctFirstLettersOfStops();
 
-    Page<Stop> findByNameStartingWith(String letter, Pageable pageable);
+    Page<Stop> findByNameStartingWithAndType(String letter, Stop.Type stopType, Pageable pageable);
 }

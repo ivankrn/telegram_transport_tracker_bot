@@ -72,11 +72,10 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
 
     private void processAnswer(String receivedMessage, long chatId, String userName) {
         String command = receivedMessage;
-        String parameter = null;
         if (receivedMessage.split(" ").length > 1) {
             command = receivedMessage.split(" ")[0];
-            parameter = receivedMessage.split(" ")[1];
         }
+        Stop.Type stopType;
         switch (command) {
             case "/start":
                 startBot(chatId, userName);
@@ -84,10 +83,15 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
             case "/help":
                 sendText(chatId, HELP_TEXT);
                 break;
+            case "/get_first_letters_of_stops_by_type":
+                stopType = Stop.Type.valueOf(receivedMessage.split(" ")[1]);
+                chooseLetter(chatId, stopType);
+                break;
             case "/get_stops_starting_with":
                 String letter = receivedMessage.split(" ")[1];
-                int pageNumber = Integer.parseInt(receivedMessage.split(" ")[3]);
-                sendStopsStartingWith(chatId, letter, pageNumber);
+                stopType = Stop.Type.valueOf(receivedMessage.split(" ")[3]);
+                int pageNumber = Integer.parseInt(receivedMessage.split(" ")[5]);
+                sendStopsStartingWith(chatId, letter, stopType, pageNumber);
                 break;
         }
     }
@@ -107,8 +111,8 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
     private void startBot(long chatId, String userName) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
-        message.setText("Выберите первую букву остановки:");
-        message.setReplyMarkup(Buttons.lettersMarkup(stopRepository.getDistinctFirstLettersOfStops()));
+        message.setText("Выберите вид транспорта:");
+        message.setReplyMarkup(Buttons.stopTypeChoiceMarkup());
         try {
             execute(message);
             log.info("Sent start reply");
@@ -117,18 +121,35 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    private void sendStopsStartingWith(long chatId, String letter, int pageNumber) {
+    private void chooseLetter(long chatId, Stop.Type stopType) {
+        SendMessage message = new SendMessage();
+        message.setChatId(chatId);
+        message.setText("Выберите первую букву остановки:");
+        message.setReplyMarkup(Buttons.lettersMarkup(stopRepository.getDistinctFirstLettersOfStops(), stopType));
+        try {
+            execute(message);
+            log.info("Sent start reply");
+        } catch (TelegramApiException e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    private void sendStopsStartingWith(long chatId, String letter, Stop.Type stopType, int pageNumber) {
         Pageable page = PageRequest.of(pageNumber, 10);
-        Page<Stop> stops = stopRepository.findByNameStartingWith(letter, page);
+        Page<Stop> stops = stopRepository.findByNameStartingWithAndType(letter, stopType, page);
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
         message.setText("Выберите остановку:");
-        message.setReplyMarkup(Buttons.stopChoiceMarkup(stops, letter));
+        message.setReplyMarkup(Buttons.stopChoiceMarkup(stops, letter, stopType));
         try {
             execute(message);
             log.info("Sent stops");
         } catch (TelegramApiException e) {
             log.error(e.getMessage());
         }
+    }
+
+    private void sendStopPredictions(int stopId) {
+
     }
 }
