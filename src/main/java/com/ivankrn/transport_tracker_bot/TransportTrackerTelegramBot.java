@@ -2,9 +2,12 @@ package com.ivankrn.transport_tracker_bot;
 
 import com.ivankrn.transport_tracker_bot.components.Buttons;
 import com.ivankrn.transport_tracker_bot.config.BotConfig;
+import com.ivankrn.transport_tracker_bot.database.Stop;
 import com.ivankrn.transport_tracker_bot.database.StopRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
@@ -68,12 +71,23 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
     }
 
     private void processAnswer(String receivedMessage, long chatId, String userName) {
-        switch (receivedMessage) {
+        String command = receivedMessage;
+        String parameter = null;
+        if (receivedMessage.split(" ").length > 1) {
+            command = receivedMessage.split(" ")[0];
+            parameter = receivedMessage.split(" ")[1];
+        }
+        switch (command) {
             case "/start":
                 startBot(chatId, userName);
                 break;
             case "/help":
                 sendText(chatId, HELP_TEXT);
+                break;
+            case "/get_stops_starting_with":
+                String letter = receivedMessage.split(" ")[1];
+                int pageNumber = Integer.parseInt(receivedMessage.split(" ")[3]);
+                sendStopsStartingWith(chatId, letter, pageNumber);
                 break;
         }
     }
@@ -93,11 +107,26 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
     private void startBot(long chatId, String userName) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
-        message.setText("Выберите первую букву остановки: ");
+        message.setText("Выберите первую букву остановки:");
         message.setReplyMarkup(Buttons.lettersMarkup(stopRepository.getDistinctFirstLettersOfStops()));
         try {
             execute(message);
             log.info("Sent start reply");
+        } catch (TelegramApiException e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    private void sendStopsStartingWith(long chatId, String letter, int pageNumber) {
+        Pageable page = PageRequest.of(pageNumber, 10);
+        Page<Stop> stops = stopRepository.findByNameStartingWith(letter, page);
+        SendMessage message = new SendMessage();
+        message.setChatId(chatId);
+        message.setText("Выберите остановку:");
+        message.setReplyMarkup(Buttons.stopChoiceMarkup(stops, letter));
+        try {
+            execute(message);
+            log.info("Sent stops");
         } catch (TelegramApiException e) {
             log.error(e.getMessage());
         }
