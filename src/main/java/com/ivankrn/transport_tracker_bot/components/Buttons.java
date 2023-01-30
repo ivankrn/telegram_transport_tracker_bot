@@ -88,4 +88,12 @@ public class Buttons {
         return markup;
     }
 
+    public static InlineKeyboardMarkup stopPredictionsMarkup(int stopId) {
+        InlineKeyboardButton refreshButton = new InlineKeyboardButton("Обновить");
+        refreshButton.setCallbackData("/update_stop_by_id " + stopId);
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>(List.of(List.of(refreshButton)));
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(rows);
+        return markup;
+    }
 }

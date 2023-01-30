@@ -15,6 +15,7 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScopeDefault;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -106,6 +107,10 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
                 int stopId = Integer.parseInt(receivedMessage.split(" ")[1]);
                 sendStopPredictions(chatId, stopId);
                 break;
+            case "/update_stop_by_id":
+                stopId = Integer.parseInt(receivedMessage.split(" ")[1]);
+                sendStopPredictions(chatId, stopId, messageId);
+                break;
         }
     }
 
@@ -177,7 +182,23 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
         message.setText(getPredictionTable(predictions));
-        message.setParseMode("HTML");
+        message.enableHtml(true);
+        message.setReplyMarkup(Buttons.stopPredictionsMarkup(stopId));
+        try {
+            execute(message);
+        } catch (TelegramApiException e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    private void sendStopPredictions(long chatId, int stopId, int messageId) {
+        List<StopPrediction> predictions = transportParser.getStopPredictionsById(stopId);
+        EditMessageText message = new EditMessageText();
+        message.setChatId(chatId);
+        message.setText(getPredictionTable(predictions));
+        message.enableHtml(true);
+        message.setMessageId(messageId);
+        message.setReplyMarkup(Buttons.stopPredictionsMarkup(stopId));
         try {
             execute(message);
         } catch (TelegramApiException e) {
@@ -186,10 +207,11 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
     }
 
     private String getPredictionTable(List<StopPrediction> predictions) {
-        StringBuilder builder = new StringBuilder("" +
-                "<pre>\n" +
-                "| Маршрут |      Прогноз      |\n" +
-                "|---------|-------------------|\n");
+        StringBuilder builder = new StringBuilder("""
+                <pre>
+                | Маршрут |      Прогноз      |
+                |---------|-------------------|
+                """);
         for (StopPrediction prediction : predictions) {
             builder.append("| ");
             String routeAsStr = String.valueOf(prediction.getRoute());
