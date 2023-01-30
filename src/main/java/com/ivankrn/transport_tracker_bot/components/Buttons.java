@@ -1,7 +1,6 @@
 package com.ivankrn.transport_tracker_bot.components;
 
 import com.ivankrn.transport_tracker_bot.database.Stop;
-import com.ivankrn.transport_tracker_bot.database.TransportParser;
 import org.springframework.data.domain.Page;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -75,12 +74,12 @@ public class Buttons {
         int currentPageNumber = stops.getPageable().getPageNumber();
         if (currentPageNumber > 0) {
             InlineKeyboardButton previousPageButton = new InlineKeyboardButton("<");
-            previousPageButton.setCallbackData("/get_stops_starting_with " + letter + " type " + stopType + " page " + (currentPageNumber - 1));
+            previousPageButton.setCallbackData("/update_stops_starting_with " + letter + " type " + stopType + " page " + (currentPageNumber - 1));
             pagination.add(previousPageButton);
         }
         if (currentPageNumber < stops.getTotalPages()) {
             InlineKeyboardButton nextPageButton = new InlineKeyboardButton(">");
-            nextPageButton.setCallbackData("/get_stops_starting_with " + letter + " type " + stopType + " page " + (currentPageNumber + 1));
+            nextPageButton.setCallbackData("/update_stops_starting_with " + letter + " type " + stopType + " page " + (currentPageNumber + 1));
             pagination.add(nextPageButton);
         }
         rows.add(pagination);

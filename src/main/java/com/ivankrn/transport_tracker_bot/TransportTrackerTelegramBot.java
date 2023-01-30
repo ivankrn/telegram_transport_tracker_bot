@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScopeDefault;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -55,28 +56,24 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
     @Override
     public void onUpdateReceived(Update update) {
         long chatId = 0;
-        long userId = 0;
-        String userName = null;
+        int messageId = 0;
         String receivedMessage;
         if (update.hasMessage()) {
             chatId = update.getMessage().getChatId();
-            userId = update.getMessage().getFrom().getId();
-            userName = update.getMessage().getFrom().getFirstName();
             if (update.getMessage().hasText()) {
                 receivedMessage = update.getMessage().getText();
-                processAnswer(receivedMessage, chatId, userName);
+                processAnswer(receivedMessage, chatId, messageId);
 
             }
         } else if (update.hasCallbackQuery()) {
             chatId = update.getCallbackQuery().getMessage().getChatId();
-            userId = update.getCallbackQuery().getFrom().getId();
-            userName = update.getCallbackQuery().getFrom().getFirstName();
             receivedMessage = update.getCallbackQuery().getData();
-            processAnswer(receivedMessage, chatId, userName);
+            messageId = update.getCallbackQuery().getMessage().getMessageId();
+            processAnswer(receivedMessage, chatId, messageId);
         }
     }
 
-    private void processAnswer(String receivedMessage, long chatId, String userName) {
+    private void processAnswer(String receivedMessage, long chatId, int messageId) {
         String command = receivedMessage;
         if (receivedMessage.split(" ").length > 1) {
             command = receivedMessage.split(" ")[0];
@@ -84,20 +81,26 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         Stop.Type stopType;
         switch (command) {
             case "/start":
-                startBot(chatId, userName);
+                startBot(chatId);
                 break;
             case "/help":
                 sendText(chatId, HELP_TEXT);
                 break;
             case "/get_first_letters_of_stops_by_type":
                 stopType = Stop.Type.valueOf(receivedMessage.split(" ")[1]);
-                chooseLetter(chatId, stopType);
+                sendLetterChoiceMenu(chatId, stopType);
                 break;
             case "/get_stops_starting_with":
                 String letter = receivedMessage.split(" ")[1];
                 stopType = Stop.Type.valueOf(receivedMessage.split(" ")[3]);
                 int pageNumber = Integer.parseInt(receivedMessage.split(" ")[5]);
                 sendStopsStartingWith(chatId, letter, stopType, pageNumber);
+                break;
+            case "/update_stops_starting_with":
+                letter = receivedMessage.split(" ")[1];
+                stopType = Stop.Type.valueOf(receivedMessage.split(" ")[3]);
+                pageNumber = Integer.parseInt(receivedMessage.split(" ")[5]);
+                sendStopsStartingWith(chatId, letter, stopType, pageNumber, messageId);
                 break;
             case "/get_stop_by_id":
                 int stopId = Integer.parseInt(receivedMessage.split(" ")[1]);
@@ -112,33 +115,30 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         message.setText(text);
         try {
             execute(message);
-            log.info("Sent text");
         } catch (TelegramApiException e) {
             log.error(e.getMessage());
         }
     }
 
-    private void startBot(long chatId, String userName) {
+    private void startBot(long chatId) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
         message.setText("Выберите вид транспорта:");
         message.setReplyMarkup(Buttons.stopTypeChoiceMarkup());
         try {
             execute(message);
-            log.info("Sent start reply");
         } catch (TelegramApiException e) {
             log.error(e.getMessage());
         }
     }
 
-    private void chooseLetter(long chatId, Stop.Type stopType) {
+    private void sendLetterChoiceMenu(long chatId, Stop.Type stopType) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
         message.setText("Выберите первую букву остановки:");
         message.setReplyMarkup(Buttons.lettersMarkup(stopRepository.getDistinctFirstLettersOfStops(), stopType));
         try {
             execute(message);
-            log.info("Sent start reply");
         } catch (TelegramApiException e) {
             log.error(e.getMessage());
         }
@@ -153,7 +153,20 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         message.setReplyMarkup(Buttons.stopChoiceMarkup(stops, letter, stopType));
         try {
             execute(message);
-            log.info("Sent stops");
+        } catch (TelegramApiException e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    private void sendStopsStartingWith(long chatId, String letter, Stop.Type stopType, int pageNumber, int messageId) {
+        Pageable page = PageRequest.of(pageNumber, 10);
+        Page<Stop> stops = stopRepository.findByNameStartingWithAndType(letter, stopType, page);
+        EditMessageReplyMarkup message = new EditMessageReplyMarkup();
+        message.setChatId(chatId);
+        message.setMessageId(messageId);
+        message.setReplyMarkup(Buttons.stopChoiceMarkup(stops, letter, stopType));
+        try {
+            execute(message);
         } catch (TelegramApiException e) {
             log.error(e.getMessage());
         }
@@ -167,7 +180,6 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         message.setParseMode("HTML");
         try {
             execute(message);
-            log.info("Sent predictions");
         } catch (TelegramApiException e) {
             log.error(e.getMessage());
         }
@@ -183,7 +195,7 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
             String routeAsStr = String.valueOf(prediction.getRoute());
             builder.append(leftPadString(routeAsStr, 7));
             builder.append(" | ");
-            String predictionAsStr = prediction.getDistanceToStop() + " м. / " + prediction.getStopsCount() + " ост.";
+            String predictionAsStr = prediction.getDistanceToStop() + " м / " + prediction.getStopsCount() + " ост.";
             builder.append(leftPadString(predictionAsStr, 17));
             builder.append(" |\n");
         }
