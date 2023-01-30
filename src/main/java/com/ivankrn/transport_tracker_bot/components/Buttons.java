@@ -77,7 +77,7 @@ public class Buttons {
             previousPageButton.setCallbackData("/update_stops_starting_with " + letter + " type " + stopType + " page " + (currentPageNumber - 1));
             pagination.add(previousPageButton);
         }
-        if (currentPageNumber < stops.getTotalPages()) {
+        if (currentPageNumber < stops.getTotalPages() - 1) {
             InlineKeyboardButton nextPageButton = new InlineKeyboardButton(">");
             nextPageButton.setCallbackData("/update_stops_starting_with " + letter + " type " + stopType + " page " + (currentPageNumber + 1));
             pagination.add(nextPageButton);
