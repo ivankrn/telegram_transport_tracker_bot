@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
@@ -81,33 +82,33 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         }
         Stop.Type stopType;
         switch (command) {
-            case "/start":
+            case CallbackQueryCommand.START:
                 startBot(chatId);
                 break;
-            case "/help":
+            case CallbackQueryCommand.HELP:
                 sendText(chatId, HELP_TEXT);
                 break;
-            case "/get_first_letters_of_stops_by_type":
+            case CallbackQueryCommand.GET_FIRST_LETTERS_OF_STOPS_BY_TYPE:
                 stopType = Stop.Type.valueOf(receivedMessage.split(" ")[1]);
                 sendLetterChoiceMenu(chatId, stopType);
                 break;
-            case "/get_stops_starting_with":
+            case CallbackQueryCommand.GET_STOPS_STARTING_WITH:
                 String letter = receivedMessage.split(" ")[1];
                 stopType = Stop.Type.valueOf(receivedMessage.split(" ")[3]);
                 int pageNumber = Integer.parseInt(receivedMessage.split(" ")[5]);
                 sendStopsStartingWith(chatId, letter, stopType, pageNumber);
                 break;
-            case "/update_stops_starting_with":
+            case CallbackQueryCommand.UPDATE_STOPS_STARTING_WITH:
                 letter = receivedMessage.split(" ")[1];
                 stopType = Stop.Type.valueOf(receivedMessage.split(" ")[3]);
                 pageNumber = Integer.parseInt(receivedMessage.split(" ")[5]);
                 sendStopsStartingWith(chatId, letter, stopType, pageNumber, messageId);
                 break;
-            case "/get_stop_by_id":
+            case CallbackQueryCommand.GET_STOP_PREDICTIONS_BY_ID:
                 int stopId = Integer.parseInt(receivedMessage.split(" ")[1]);
                 sendStopPredictions(chatId, stopId);
                 break;
-            case "/update_stop_by_id":
+            case CallbackQueryCommand.UPDATE_STOP_PREDICTIONS_BY_ID:
                 stopId = Integer.parseInt(receivedMessage.split(" ")[1]);
                 sendStopPredictions(chatId, stopId, messageId);
                 break;
@@ -118,11 +119,7 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
         message.setText(text);
-        try {
-            execute(message);
-        } catch (TelegramApiException e) {
-            log.error(e.getMessage());
-        }
+        executeMessageWithLogging(message);
     }
 
     private void startBot(long chatId) {
@@ -130,11 +127,7 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         message.setChatId(chatId);
         message.setText("Выберите вид транспорта:");
         message.setReplyMarkup(Buttons.stopTypeChoiceMarkup());
-        try {
-            execute(message);
-        } catch (TelegramApiException e) {
-            log.error(e.getMessage());
-        }
+        executeMessageWithLogging(message);
     }
 
     private void sendLetterChoiceMenu(long chatId, Stop.Type stopType) {
@@ -142,11 +135,7 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         message.setChatId(chatId);
         message.setText("Выберите первую букву остановки:");
         message.setReplyMarkup(Buttons.lettersMarkup(stopRepository.getDistinctFirstLettersOfStops(), stopType));
-        try {
-            execute(message);
-        } catch (TelegramApiException e) {
-            log.error(e.getMessage());
-        }
+        executeMessageWithLogging(message);
     }
 
     private void sendStopsStartingWith(long chatId, String letter, Stop.Type stopType, int pageNumber) {
@@ -156,11 +145,7 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         message.setChatId(chatId);
         message.setText("Выберите остановку:");
         message.setReplyMarkup(Buttons.stopChoiceMarkup(stops, letter, stopType));
-        try {
-            execute(message);
-        } catch (TelegramApiException e) {
-            log.error(e.getMessage());
-        }
+        executeMessageWithLogging(message);
     }
 
     private void sendStopsStartingWith(long chatId, String letter, Stop.Type stopType, int pageNumber, int messageId) {
@@ -170,11 +155,7 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         message.setChatId(chatId);
         message.setMessageId(messageId);
         message.setReplyMarkup(Buttons.stopChoiceMarkup(stops, letter, stopType));
-        try {
-            execute(message);
-        } catch (TelegramApiException e) {
-            log.error(e.getMessage());
-        }
+        executeMessageWithLogging(message);
     }
 
     private void sendStopPredictions(long chatId, int stopId) {
@@ -184,11 +165,7 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         message.setText(getPredictionTable(predictions));
         message.enableHtml(true);
         message.setReplyMarkup(Buttons.stopPredictionsMarkup(stopId));
-        try {
-            execute(message);
-        } catch (TelegramApiException e) {
-            log.error(e.getMessage());
-        }
+        executeMessageWithLogging(message);
     }
 
     private void sendStopPredictions(long chatId, int stopId, int messageId) {
@@ -199,11 +176,7 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         message.enableHtml(true);
         message.setMessageId(messageId);
         message.setReplyMarkup(Buttons.stopPredictionsMarkup(stopId));
-        try {
-            execute(message);
-        } catch (TelegramApiException e) {
-            log.error(e.getMessage());
-        }
+        executeMessageWithLogging(message);
     }
 
     private String getPredictionTable(List<StopPrediction> predictions) {
@@ -227,5 +200,13 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
 
     private String leftPadString(String str, int length) {
         return String.format("%1$" + length + "s", str);
+    }
+
+    private void executeMessageWithLogging(BotApiMethod<?> message) {
+        try {
+            execute(message);
+        } catch (TelegramApiException e) {
+            log.error(e.getMessage());
+        }
     }
 }

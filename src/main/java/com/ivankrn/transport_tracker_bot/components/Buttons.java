@@ -1,5 +1,6 @@
 package com.ivankrn.transport_tracker_bot.components;
 
+import com.ivankrn.transport_tracker_bot.CallbackQueryCommand;
 import com.ivankrn.transport_tracker_bot.database.Stop;
 import org.springframework.data.domain.Page;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -9,25 +10,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Buttons {
-    private static final InlineKeyboardButton START_BUTTON = new InlineKeyboardButton("Старт");
-    private static final InlineKeyboardButton HELP_BUTTON = new InlineKeyboardButton("Помощь");
-
-    public static InlineKeyboardMarkup inlineMarkup() {
-        START_BUTTON.setCallbackData("/start");
-        HELP_BUTTON.setCallbackData("/help");
-        List<InlineKeyboardButton> row = List.of(START_BUTTON, HELP_BUTTON);
-        List<List<InlineKeyboardButton>> rows = List.of(row);
-        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        markup.setKeyboard(rows);
-        return markup;
-    }
 
     public static InlineKeyboardMarkup stopTypeChoiceMarkup() {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         InlineKeyboardButton busAndTrolleybusButton = new InlineKeyboardButton("\uD83D\uDE8D Автобус / троллейбус");
-        busAndTrolleybusButton.setCallbackData("/get_first_letters_of_stops_by_type " + Stop.Type.BUS);
+        busAndTrolleybusButton.setCallbackData(CallbackQueryCommand.GET_FIRST_LETTERS_OF_STOPS_BY_TYPE + " " + Stop.Type.BUS);
         InlineKeyboardButton tramButton = new InlineKeyboardButton("\uD83D\uDE8A Трамвай");
-        tramButton.setCallbackData("/get_first_letters_of_stops_by_type " + Stop.Type.TRAM);
+        tramButton.setCallbackData(CallbackQueryCommand.GET_FIRST_LETTERS_OF_STOPS_BY_TYPE + " " + Stop.Type.TRAM);
         rows.add(List.of(busAndTrolleybusButton));
         rows.add(List.of(tramButton));
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
@@ -43,7 +32,7 @@ public class Buttons {
             List<InlineKeyboardButton> row = new ArrayList<>();
             for (int i = r * buttonsInRowCount; i - r * buttonsInRowCount < buttonsInRowCount; i++) {
                 InlineKeyboardButton button = new InlineKeyboardButton(String.valueOf(letters.get(i)));
-                button.setCallbackData("/get_stops_starting_with " + letters.get(i) + " type " + stopType + " page 0");
+                button.setCallbackData(CallbackQueryCommand.GET_STOPS_STARTING_WITH + " " + letters.get(i) + " type " + stopType + " page 0");
                 row.add(button);
             }
             rows.add(row);
@@ -52,7 +41,7 @@ public class Buttons {
             List<InlineKeyboardButton> row = new ArrayList<>();
             for (int i = buttonsInRowCount * rowsCount; i < letters.size(); i++) {
                 InlineKeyboardButton button = new InlineKeyboardButton(String.valueOf(letters.get(i)));
-                button.setCallbackData("/get_stops_starting_with " + letters.get(i) + " type " + stopType + " page 0");
+                button.setCallbackData(CallbackQueryCommand.GET_STOPS_STARTING_WITH + " " + letters.get(i) + " type " + stopType + " page 0");
                 row.add(button);
             }
             rows.add(row);
@@ -66,7 +55,7 @@ public class Buttons {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         stops.get().forEach(stop -> {
             InlineKeyboardButton button = new InlineKeyboardButton(stop.getName());
-            button.setCallbackData("/get_stop_by_id " + stop.getId());
+            button.setCallbackData(CallbackQueryCommand.GET_STOP_PREDICTIONS_BY_ID + " " + stop.getId());
             List<InlineKeyboardButton> row = List.of(button);
             rows.add(row);
         });
@@ -74,12 +63,12 @@ public class Buttons {
         int currentPageNumber = stops.getPageable().getPageNumber();
         if (currentPageNumber > 0) {
             InlineKeyboardButton previousPageButton = new InlineKeyboardButton("<");
-            previousPageButton.setCallbackData("/update_stops_starting_with " + letter + " type " + stopType + " page " + (currentPageNumber - 1));
+            previousPageButton.setCallbackData(CallbackQueryCommand.UPDATE_STOPS_STARTING_WITH + " " + letter + " type " + stopType + " page " + (currentPageNumber - 1));
             pagination.add(previousPageButton);
         }
         if (currentPageNumber < stops.getTotalPages() - 1) {
             InlineKeyboardButton nextPageButton = new InlineKeyboardButton(">");
-            nextPageButton.setCallbackData("/update_stops_starting_with " + letter + " type " + stopType + " page " + (currentPageNumber + 1));
+            nextPageButton.setCallbackData(CallbackQueryCommand.UPDATE_STOPS_STARTING_WITH + " " + letter + " type " + stopType + " page " + (currentPageNumber + 1));
             pagination.add(nextPageButton);
         }
         rows.add(pagination);
@@ -90,7 +79,7 @@ public class Buttons {
 
     public static InlineKeyboardMarkup stopPredictionsMarkup(int stopId) {
         InlineKeyboardButton refreshButton = new InlineKeyboardButton("Обновить");
-        refreshButton.setCallbackData("/update_stop_by_id " + stopId);
+        refreshButton.setCallbackData(CallbackQueryCommand.UPDATE_STOP_PREDICTIONS_BY_ID + " " + stopId);
         List<List<InlineKeyboardButton>> rows = new ArrayList<>(List.of(List.of(refreshButton)));
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(rows);
