@@ -45,16 +45,31 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         }
     }
 
+    /**
+     * Возвращает username бота.
+     *
+     * @return Username бота
+     */
     @Override
     public String getBotUsername() {
         return config.getBotName();
     }
 
+    /**
+     * Возвращает токен бота.
+     *
+     * @return Токен бота
+     */
     @Override
     public String getBotToken() {
         return config.getToken();
     }
 
+    /**
+     * Обрабатывает обновление Telegram.
+     *
+     * @param update Обновление
+     */
     @Override
     public void onUpdateReceived(Update update) {
         long chatId = 0;
@@ -75,6 +90,13 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         }
     }
 
+    /**
+     * Обрабатывает поступившее сообщение.
+     *
+     * @param receivedMessage Полученное сообщение
+     * @param chatId ID чата
+     * @param messageId ID сообщения
+     */
     private void processAnswer(String receivedMessage, long chatId, int messageId) {
         String command = receivedMessage;
         if (receivedMessage.split(" ").length > 1) {
@@ -122,6 +144,11 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         executeMessageWithLogging(message);
     }
 
+    /**
+     * Обрабатывает старт бота, предлагая пользователю выбор вида транспорта.
+     *
+     * @param chatId ID чата
+     */
     private void startBot(long chatId) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
@@ -130,6 +157,12 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         executeMessageWithLogging(message);
     }
 
+    /**
+     * Отправляет пользователю список букв для выбора остановки.
+     *
+     * @param chatId ID чата
+     * @param stopType Вид остановки
+     */
     private void sendLetterChoiceMenu(long chatId, Stop.Type stopType) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
@@ -138,6 +171,14 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         executeMessageWithLogging(message);
     }
 
+    /**
+     * Отправляет пользователю остановки, начинающиеся на указанную букву.
+     *
+     * @param chatId ID чата
+     * @param letter Первая буква названия остановки
+     * @param stopType Вид остановки
+     * @param pageNumber Номер страницы для отображения
+     */
     private void sendStopsStartingWith(long chatId, String letter, Stop.Type stopType, int pageNumber) {
         Pageable page = PageRequest.of(pageNumber, 10);
         Page<Stop> stops = stopRepository.findByNameStartingWithAndType(letter, stopType, page);
@@ -148,6 +189,15 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         executeMessageWithLogging(message);
     }
 
+    /**
+     * Обновляет сообщение с остановками на указанную букву, не отправляя при этом новое сообщение.
+     *
+     * @param chatId ID чата
+     * @param letter Первая буква названия остановки
+     * @param stopType Вид остановки
+     * @param pageNumber Номер страницы для отображения
+     * @param messageId ID исходного сообщения
+     */
     private void sendStopsStartingWith(long chatId, String letter, Stop.Type stopType, int pageNumber, int messageId) {
         Pageable page = PageRequest.of(pageNumber, 10);
         Page<Stop> stops = stopRepository.findByNameStartingWithAndType(letter, stopType, page);
@@ -158,6 +208,12 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         executeMessageWithLogging(message);
     }
 
+    /**
+     * Отправляет пользователю прогноз для указанной остановки.
+     *
+     * @param chatId ID чата
+     * @param stopId ID остановки
+     */
     private void sendStopPredictions(long chatId, int stopId) {
         List<StopPrediction> predictions = transportParser.getStopPredictionsById(stopId);
         SendMessage message = new SendMessage();
@@ -168,6 +224,13 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         executeMessageWithLogging(message);
     }
 
+    /**
+     * Обновляет прогноз для указанной остановки, при этом не отправляя новое сообщение.
+     *
+     * @param chatId ID чата
+     * @param stopId ID остановки
+     * @param messageId ID исходного сообщения
+     */
     private void sendStopPredictions(long chatId, int stopId, int messageId) {
         List<StopPrediction> predictions = transportParser.getStopPredictionsById(stopId);
         EditMessageText message = new EditMessageText();
@@ -179,6 +242,12 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         executeMessageWithLogging(message);
     }
 
+    /**
+     * Возвращает таблицу в виде строки из указанных прогнозов для остановки.
+     *
+     * @param predictions Список с прогнозами для остановки
+     * @return Таблица в виде строки
+     */
     private String getPredictionTable(List<StopPrediction> predictions) {
         StringBuilder builder = new StringBuilder("""
                 <pre>
@@ -198,10 +267,22 @@ public class TransportTrackerTelegramBot extends TelegramLongPollingBot {
         return builder.toString();
     }
 
+    /**
+     * Возвращает строку, дополненную пробелами слева до указанной длины.
+     *
+     * @param str Строка
+     * @param length Длина
+     * @return Строка, дополненная пробелами слева до указанной длины
+     */
     private String leftPadString(String str, int length) {
         return String.format("%1$" + length + "s", str);
     }
 
+    /**
+     * Выполняет сообщение Telegram с логированием.
+     *
+     * @param message Сообщение
+     */
     private void executeMessageWithLogging(BotApiMethod<?> message) {
         try {
             execute(message);

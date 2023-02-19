@@ -17,6 +17,13 @@ public class StopDBInitializer implements CommandLineRunner {
     @Autowired
     TransportParser transportParser;
 
+    /**
+     * Проверяет, пуста ли таблица с остановками, если пуста, то выгружает все остановки с сайта и сохраняет их в базу
+     * данных, иначе пропускает заполнение базы данных.
+     *
+     * @param args
+     * @throws Exception
+     */
     @Override
     public void run(String... args) throws Exception {
         long stopsCount = StreamSupport.stream(stopRepository.findAll().spliterator(), false).count();

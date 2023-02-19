@@ -25,6 +25,12 @@ public class TransportParser {
         this.webClient = webClientBuilder.baseUrl(apiUrl).build();
     }
 
+    /**
+     * Возвращает список прогнозов для остановки.
+     *
+     * @param stopId ID остановки
+     * @return Список прогнозов для остановки
+     */
     public List<StopPrediction> getStopPredictionsById(int stopId) {
         List<StopPrediction> predictions = new ArrayList<>();
         String response = webClient.get()
@@ -46,6 +52,12 @@ public class TransportParser {
         return predictions;
     }
 
+    /**
+     * Возвращает номер маршрута по ID указанного транспорта.
+     *
+     * @param id ID транспорта
+     * @return Номер маршрута
+     */
     private int getRouteNumberById(int id) {
         String response = webClient.get()
                 .uri("/route/getsummary/" + id)
@@ -55,6 +67,12 @@ public class TransportParser {
         return json.get("data").get("name").asInt();
     }
 
+    /**
+     * Возвращает строку в виде JsonNode.
+     *
+     * @param jsonString Строка json
+     * @return JsonNode представление строки
+     */
     private JsonNode getJson(String jsonString) {
         JsonNode json = null;
         try {
@@ -65,6 +83,11 @@ public class TransportParser {
         return json;
     }
 
+    /**
+     * Возвращает список всех остановок.
+     *
+     * @return Список всех остановок
+     */
     public List<Stop> getAllStops() {
         String baseUrl = "https://your-bus.ru";
         List<Stop> stops = new ArrayList<>();
@@ -91,6 +114,12 @@ public class TransportParser {
         return stops;
     }
 
+    /**
+     * Возвращает список остановок на указанной странице.
+     *
+     * @param pageId ID страницы
+     * @return Список остановок на указанной странице
+     */
     public List<Stop> getStopsByPageId(int pageId) {
         String baseUrl = "https://your-bus.ru";
         List<Stop> stops = new ArrayList<>();

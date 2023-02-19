@@ -11,6 +11,11 @@ import java.util.List;
 
 public class Buttons {
 
+    /**
+     * Возвращает разметку для выбора вида транспорта.
+     *
+     * @return Разметка для выбора вида транспорта
+     */
     public static InlineKeyboardMarkup stopTypeChoiceMarkup() {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         InlineKeyboardButton busAndTrolleybusButton = new InlineKeyboardButton("\uD83D\uDE8D Автобус / троллейбус");
@@ -24,6 +29,13 @@ public class Buttons {
         return markup;
     }
 
+    /**
+     * Возвращает разметку для выбра остановки по первой букве.
+     *
+     * @param letters Список первых букв остановок
+     * @param stopType Вид остановки
+     * @return Разметка для выбора остановки по первой букве
+     */
     public static InlineKeyboardMarkup lettersMarkup(List<Character> letters, Stop.Type stopType) {
         int buttonsInRowCount = 8;
         int rowsCount = letters.size() / buttonsInRowCount;
@@ -51,6 +63,14 @@ public class Buttons {
         return markup;
     }
 
+    /**
+     * Возвращает разметку для выбора остановки.
+     *
+     * @param stops Список остановок
+     * @param letter Первая буква названия остановки
+     * @param stopType Вид остановки
+     * @return Разметка для выбора остановки
+     */
     public static InlineKeyboardMarkup stopChoiceMarkup(Page<Stop> stops, String letter, Stop.Type stopType) {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         stops.get().forEach(stop -> {
@@ -77,6 +97,12 @@ public class Buttons {
         return markup;
     }
 
+    /**
+     * Вовзращает разметку для прогноза по остановке.
+     *
+     * @param stopId ID остановки
+     * @return Разметка для прогноза по остановке
+     */
     public static InlineKeyboardMarkup stopPredictionsMarkup(int stopId) {
         InlineKeyboardButton refreshButton = new InlineKeyboardButton("Обновить");
         refreshButton.setCallbackData(CallbackQueryCommand.UPDATE_STOP_PREDICTIONS_BY_ID + " " + stopId);
